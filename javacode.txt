@@ -1,0 +1,76 @@
+package com.mycompany.ecommerce2;
+import java.io.*;
+import java.util.*;
+
+public class Main {
+
+    static class Product {
+        String productId;
+        String productName;
+        int totalQuantity;
+
+        Product(String id, String name) {
+            this.productId = id;
+            this.productName = name;
+            this.totalQuantity = 0;
+        }
+
+        void addQuantity(int quantity) {
+            this.totalQuantity += quantity;
+        }
+    }
+
+    public static void main(String[] args) {
+        String productFile = "files/data/products_df.csv";
+        String transactionFile = "files/data/transactions_df.csv";
+
+        Map<String, Product> productMap = new HashMap<>();
+
+        // Step 1: Load products into productMap
+        try (BufferedReader br = new BufferedReader(new FileReader(productFile))) {
+            String line;
+            br.readLine(); // skip header
+            while ((line = br.readLine()) != null) {
+                String[] data = line.split(",");
+                String productId = data[0].trim();
+                String productName = data[1].trim();
+                productMap.put(productId, new Product(productId, productName));
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading products file.");
+            e.printStackTrace();
+        }
+
+        // Step 2: Read transactions and update product quantities
+        try (BufferedReader br = new BufferedReader(new FileReader(transactionFile))) {
+            String line;
+            br.readLine(); // skip header
+            while ((line = br.readLine()) != null) {
+                String[] data = line.split(",");
+                String productId = data[2].trim();
+                int quantity = Integer.parseInt(data[3].trim());
+
+                if (productMap.containsKey(productId)) {
+                    productMap.get(productId).addQuantity(quantity);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading transactions file.");
+            e.printStackTrace();
+        }
+
+        // Step 3: Sort products by quantity sold
+        List<Product> sortedList = new ArrayList<>(productMap.values());
+        sortedList.sort((a, b) -> Integer.compare(b.totalQuantity, a.totalQuantity));
+
+        // Step 4: Display top 10 trending products
+        System.out.println("Top 10 Trending Products:");
+        System.out.printf("%-20s %-10s\n", "Product Name", "Total Sold");
+        System.out.println("-----------------------------------");
+
+        for (int i = 0; i < Math.min(10, sortedList.size()); i++) {
+            Product p = sortedList.get(i);
+            System.out.printf("%-20s %-10d\n", p.productName, p.totalQuantity);
+        }
+    }
+}
